@@ -33,7 +33,7 @@ Then, in your *build.gradle*:
 ```groovy
 	dependencies {
 	        implementation 'com.github.ygorluizfrazao.compose-audio-controls:audio-services:v1.0.0-alpha03'
-          implementation 'com.github.ygorluizfrazao.compose-audio-controls:ui:v1.0.0-alpha03'
+          	implementation 'com.github.ygorluizfrazao.compose-audio-controls:ui:v1.0.0-alpha03'
 	}
 ```
 
