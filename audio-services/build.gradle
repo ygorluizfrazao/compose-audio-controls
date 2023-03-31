@@ -68,7 +68,7 @@ afterEvaluate{
                 from components.release
                 groupId 'br.com.frazo.compose_audio_controls'
                 artifactId 'audio-services'
-                version '1.0.0-alpha01'
+                version '1.0.0-alpha02'
             }
         }
     }
