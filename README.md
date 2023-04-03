@@ -201,35 +201,58 @@ if (audioNoteStatus == viewmodel.AudioNoteStatus.HAVE_TO_RECORD) {
 ```
 
 ### Playing:
-<img src="https://user-images.githubusercontent.com/17025709/228987636-754c14bb-755c-4c25-9805-441a03498030.gif" alt="PLaying Component" style="width:20%; height:20%">
+<img src="https://user-images.githubusercontent.com/17025709/229643756-b2619a08-3b9e-44dd-b1aa-9107543e7c5d.gif" alt="PLaying Component" style="width:20%; height:20%">
 
 When you want to play an audio file, use:
 
 ```kotlin
 @Composable
+@Composable
 fun AudioPlayer(
     modifier: Modifier = Modifier,
     audioPlayingData: AudioPlayingData,
-    playIcon: @Composable () -> Unit,
-    pauseIcon: @Composable () -> Unit,
-    deleteIcon: (@Composable () -> Unit)? = null,
-    timeLabelStyle: TextStyle = LocalTextStyle.current,
-    onPlay: () -> Unit,
-    onPause: () -> Unit,
-    onDelete: (() -> Unit)? = null
+    audioPlayerParams: AudioPlayerParams = buildAudioPlayerParams(),
+    audioPlayerCallbacks: AudioPlayerCallbacks
 )
 ```
 
 *`audioPlayingData: AudioPlayingData`: An object with useful information about the audio being played.
 ```kotlin
 data class AudioPlayingData(val status: AudioPlayerStatus, val duration: Long, val elapsed: Long)
+
 enum class AudioPlayerStatus{
     NOT_INITIALIZED, PLAYING, PAUSED
 }
 ```
-*`onPlay: () -> Unit` -> Callback when the user clicks play.
-*`onPause: () -> Unit` -> Callback when the user clicks pause.
-*`onDelete: (() -> Unit)? = null` -> Optional callback when the user clicks to delete the file.
+*`audioPlayerParams` -> Configures the player.
+
+```kotlin
+data class AudioPlayerParams(
+    val timeLabelStyle: TextStyle,
+    val timeContainerModifier: Modifier,
+    val timeLabelContent: (@Composable (elapsedTime: Long, totalDuration: Long) -> Unit),
+    val playIcon: @Composable () -> Unit,
+    val pauseIcon: @Composable () -> Unit,
+    val endIcon: (@Composable () -> Unit)?,
+)
+```
+Has a convenience function with default values where you can fine tune what you need:
+
+```kotlin
+@Composable
+fun buildAudioPlayerParams
+```
+
+*`audioPlayerCallbacks` -> Callback for user inputs.
+
+```kotlin
+data class AudioPlayerCallbacks(
+    val onPlay: () -> Unit,
+    val onPause: () -> Unit,
+    val onSeekPosition: (Float) -> Unit,
+    val onEndIconClicked: (() -> Unit)? = null
+)
+```
 
 To acquire the `AudioPlayingData` object, you will need to make use of `AndroidAudioPlayer` class, by calling its `override fun start(file: File): Flow<AudioPlayingData>` which will return a `Flow<AudioPlayingData>` that you can observe in your viewmodel. for example:
 
@@ -294,25 +317,33 @@ If you need a way to get the needed permission, consider using [composed-permiss
 for futher clarification, the ui for this example looks like:
 
 ```kotlin
-      AudioPlayer(
-          modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium),
-          audioPlayingData = audioPlayingData,
-          playIcon = {
-              //Compose your icon
-          },
-          pauseIcon = {
-              //Compose your icon
-          },
-          deleteIcon =
-          if (onAudioNoteDeleteRequest != null) {
-              {
-                  //Compose your icon
-              }
-          } else null,
-          onPlay = onAudioNotePlayRequest, // viewmodel's playAudioNote() method call
-          onPause = onAudioNotePauseRequest, // viewmodel's pauseAudioNote() method call
-          onDelete = onAudioNoteDeleteRequest // viewmodel's deleteAudioNote() method call
-      )
+AudioPlayer(
+    modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium),
+    audioPlayingData = audioPlayingData,
+    audioPlayerParams = buildAudioPlayerParams(
+	playIcon = {
+	    IconResource.fromImageVector(Icons.Default.PlayArrow)
+		.ComposeIcon()
+	},
+	pauseIcon = {
+	    IconResource.fromImageVector(Icons.Default.Pause)
+		.ComposeIcon()
+	},
+	endIcon =
+	if (onAudioNoteDeleteRequest != null) {
+	    {
+		IconResource.fromImageVector(Icons.Default.Delete)
+		    .ComposeIcon()
+	    }
+	} else null,
+    ),
+    audioPlayerCallbacks = AudioPlayerCallbacks(
+	onPlay = onAudioNotePlayRequest,
+	onPause = onAudioNotePauseRequest,
+	onEndIconClicked = onAudioNoteDeleteRequest,
+	onSeekPosition = onAudionNoteSeekPosition
+    )
+)
 ```
 
 Hope it helps you.
