@@ -13,4 +13,6 @@ interface AudioPlayer {
 
     fun stop()
 
+    fun seek(position: Long)
+
 }

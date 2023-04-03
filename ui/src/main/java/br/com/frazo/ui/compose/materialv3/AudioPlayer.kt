@@ -1,30 +1,31 @@
 package br.com.frazo.ui.compose.materialv3
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.dp
 import br.com.frazo.audio_services.player.AudioPlayerStatus
 import br.com.frazo.audio_services.player.AudioPlayingData
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AudioPlayer(
     modifier: Modifier = Modifier,
     audioPlayingData: AudioPlayingData,
-    playIcon: @Composable () -> Unit,
-    pauseIcon: @Composable () -> Unit,
-    deleteIcon: (@Composable () -> Unit)? = null,
-    timeLabelStyle: TextStyle = LocalTextStyle.current,
-    onPlay: () -> Unit,
-    onPause: () -> Unit,
-    onDelete: (() -> Unit)? = null
+    audioPlayerParams: AudioPlayerParams = buildAudioPlayerParams(),
+    audioPlayerCallbacks: AudioPlayerCallbacks
 ) {
 
     val progress = remember(audioPlayingData) {
@@ -34,6 +35,8 @@ fun AudioPlayer(
             return@remember elapsed / duration.toFloat()
         }
     }
+
+    val sliderInteractionSource = MutableInteractionSource()
 
     Row(
         modifier = modifier
@@ -47,37 +50,124 @@ fun AudioPlayer(
             modifier = Modifier.wrapContentSize(),
             onClick = {
                 when (audioPlayingData.status) {
-                    AudioPlayerStatus.NOT_INITIALIZED, AudioPlayerStatus.PAUSED -> onPlay()
-                    AudioPlayerStatus.PLAYING -> onPause()
+                    AudioPlayerStatus.NOT_INITIALIZED, AudioPlayerStatus.PAUSED -> audioPlayerCallbacks.onPlay()
+                    AudioPlayerStatus.PLAYING -> audioPlayerCallbacks.onPause()
                 }
             }) {
             when (audioPlayingData.status) {
-                AudioPlayerStatus.NOT_INITIALIZED, AudioPlayerStatus.PAUSED -> playIcon()
-                AudioPlayerStatus.PLAYING -> pauseIcon()
+                AudioPlayerStatus.NOT_INITIALIZED, AudioPlayerStatus.PAUSED -> audioPlayerParams.playIcon()
+                AudioPlayerStatus.PLAYING -> audioPlayerParams.pauseIcon()
             }
         }
         Column(
             modifier = Modifier.weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LinearProgressIndicator(progress = progress)
-            val minutes = audioPlayingData.elapsed / 1000 / 60
-            val seconds = audioPlayingData.elapsed / 1000 % 60
-            Text(
-                text = "${minutes.toString().padStart(2, '0')}:${
-                    seconds.toString().padStart(2, '0')
-                }",
-                style = timeLabelStyle
-            )
+
+            Slider(
+                value = progress,
+                onValueChange = audioPlayerCallbacks.onSeekPosition,
+                valueRange = (0f..1f),
+                thumb = {
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = audioPlayerParams.timeContainerModifier
+                        ) {
+                            audioPlayerParams.timeLabelContent(
+                                audioPlayingData.elapsed,
+                                audioPlayingData.duration
+                            )
+                        }
+                        Spacer(modifier = Modifier.size(4.dp))
+//                        SliderDefaults.Thumb(
+//                            interactionSource = sliderInteractionSource
+//                        )
+                    }
+                },
+                track = {
+                    SliderDefaults.Track(
+                        sliderPositions = it, colors = SliderDefaults.colors(
+                            inactiveTrackColor = LocalContentColor.current.copy(alpha = 0.5f)
+                        )
+                    )
+                })
         }
-        deleteIcon?.let {
+
+        if (audioPlayerParams.endIcon != null && audioPlayerCallbacks.onEndIconClicked != null) {
             IconButton(
-                modifier = Modifier.wrapContentSize(),
+                modifier = Modifier
+                    .wrapContentSize(),
                 onClick = {
-                    onDelete?.invoke()
+                    audioPlayerCallbacks.onEndIconClicked.invoke()
                 }) {
-                it()
+                audioPlayerParams.endIcon.invoke()
             }
         }
     }
 }
+
+
+@Composable
+fun buildAudioPlayerParams(
+    timeLabelStyle: TextStyle = LocalTextStyle.current.copy(color = contentColorFor(backgroundColor = LocalTextSelectionColors.current.handleColor)),
+    timeContainerModifier: Modifier = Modifier
+        .background(
+            LocalTextSelectionColors.current.handleColor,
+            shape = RoundedCornerShape(6.dp)
+        )
+        .shadow(
+            elevation = 10.dp
+        )
+        .padding(2.dp),
+    timeLabelContent: (@Composable (elapsedTime: Long, totalDuration: Long) -> Unit) = { elapsedTime, _ ->
+        val minutes = elapsedTime / 1000 / 60
+        val seconds = elapsedTime / 1000 % 60
+        Text(
+            text = "${minutes.toString().padStart(2, '0')}:${
+                seconds.toString().padStart(2, '0')
+            }",
+            style = timeLabelStyle
+        )
+    },
+    playIcon: @Composable () -> Unit = {
+        Icon(
+            imageVector = Icons.Default.PlayArrow,
+            contentDescription = "Play"
+        )
+    },
+    pauseIcon: @Composable () -> Unit = {
+        Icon(
+            imageVector = Icons.Default.Pause,
+            contentDescription = "Pause"
+        )
+    },
+    endIcon: (@Composable () -> Unit)? = null,
+): AudioPlayerParams {
+    return AudioPlayerParams(
+        timeLabelStyle,
+        timeContainerModifier,
+        timeLabelContent,
+        playIcon,
+        pauseIcon,
+        endIcon
+    )
+}
+
+data class AudioPlayerParams(
+    val timeLabelStyle: TextStyle,
+    val timeContainerModifier: Modifier,
+    val timeLabelContent: (@Composable (elapsedTime: Long, totalDuration: Long) -> Unit),
+    val playIcon: @Composable () -> Unit,
+    val pauseIcon: @Composable () -> Unit,
+    val endIcon: (@Composable () -> Unit)?,
+)
+
+data class AudioPlayerCallbacks(
+    val onPlay: () -> Unit,
+    val onPause: () -> Unit,
+    val onSeekPosition: (Float) -> Unit,
+    val onEndIconClicked: (() -> Unit)? = null
+)
