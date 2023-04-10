@@ -7,6 +7,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -29,7 +30,7 @@ fun AudioRecorder(
     onRecordRequested: () -> Unit,
     onStopRequested: () -> Unit
 ) {
-    var isRunning by remember {
+    var isRecording by rememberSaveable {
         mutableStateOf(false)
     }
 
@@ -43,7 +44,7 @@ fun AudioRecorder(
         IconButton(
             modifier = Modifier.wrapContentSize(),
             onClick = {
-                isRunning = if (isRunning) {
+                isRecording = if (isRecording) {
                     onStopRequested()
                     false
                 } else {
@@ -51,7 +52,7 @@ fun AudioRecorder(
                     true
                 }
             }) {
-            if (isRunning)
+            if (isRecording)
                 stopIcon()
             else
                 recordIcon()

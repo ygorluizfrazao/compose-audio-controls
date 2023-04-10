@@ -7,7 +7,7 @@ import androidx.core.net.toUri
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.io.File
-import java.util.*
+import java.util.UUID
 
 class AndroidAudioPlayer(
     private val context: Context,
@@ -19,6 +19,7 @@ class AndroidAudioPlayer(
     private var player: MediaPlayer? = null
     private val _audioPlayingData =
         MutableStateFlow(AudioPlayingData(AudioPlayerStatus.NOT_INITIALIZED, 0, 0))
+    private var flowJob: Job? = null
     private var currentUniqueId: String? = null
 
     override fun start(file: File): Flow<AudioPlayingData> {
@@ -34,7 +35,7 @@ class AndroidAudioPlayer(
         }
 
         _audioPlayingData.value = _audioPlayingData.value.copy(status = AudioPlayerStatus.PLAYING)
-        CoroutineScope(dispatcher).launch {
+        flowJob = CoroutineScope(dispatcher).launch {
             currentUniqueId?.let {
                 startFlowing(it)
                     .collectLatest {
@@ -63,6 +64,8 @@ class AndroidAudioPlayer(
     }
 
     override fun stop() {
+
+        flowJob?.cancel()
         player?.let {
             if (it.isPlaying) {
                 it.stop()
@@ -76,7 +79,7 @@ class AndroidAudioPlayer(
 
     override fun seek(position: Long) {
         player?.let {
-            if(_audioPlayingData.value.status!=AudioPlayerStatus.NOT_INITIALIZED){
+            if(_audioPlayingData.value.status!= AudioPlayerStatus.NOT_INITIALIZED){
                 it.seekTo(position.toInt())
             }
         }
@@ -88,13 +91,13 @@ class AndroidAudioPlayer(
             while (true) {
                 //finishes the flow
                 if (player == null) {
-                    //Log.d("Audio Player: ","Exit")
+                    Log.d("Audio Player: ","Exit")
                     return@flow
                 }
 
                 player?.let {
                     if (uniqueId != currentUniqueId) {
-                        //Log.d("Audio Player: ","Exit")
+                        Log.d("Audio Player: ","Exit")
                         return@flow
                     }
                     val newData = _audioPlayingData.value.copy(

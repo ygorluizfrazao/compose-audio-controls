@@ -39,9 +39,11 @@ class AndroidAudioRecorder(
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-            setOutputFile(FileOutputStream(outputFile).fd)
+            val fos = FileOutputStream(outputFile)
+            setOutputFile(fos.fd)
             prepare()
             start()
+            fos.close()
         }
 
         UUID.randomUUID().toString().also {uuid->

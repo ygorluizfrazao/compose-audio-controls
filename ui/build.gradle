@@ -82,7 +82,7 @@ afterEvaluate{
                 from components.release
                 groupId 'br.com.frazo.compose_audio_controls'
                 artifactId 'ui'
-                version '1.0.1-alpha01'
+                version '1.0.2-alpha01'
             }
         }
     }
