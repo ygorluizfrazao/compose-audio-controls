@@ -211,7 +211,7 @@ When you want to play an audio file, use:
 fun AudioPlayer(
     modifier: Modifier = Modifier,
     audioPlayingData: AudioPlayingData,
-    audioPlayerParams: AudioPlayerParams = buildAudioPlayerParams(),
+    audioPlayerParams: AudioPlayerParams = rememberAudioPlayerParams(),
     audioPlayerCallbacks: AudioPlayerCallbacks
 )
 ```
@@ -240,7 +240,7 @@ Has a convenience function with default values where you can fine tune what you 
 
 ```kotlin
 @Composable
-fun buildAudioPlayerParams
+fun rememberAudioPlayerParams()
 ```
 
 *`audioPlayerCallbacks` -> Callback for user inputs.
@@ -320,7 +320,7 @@ for futher clarification, the ui for this example looks like:
 AudioPlayer(
     modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium),
     audioPlayingData = audioPlayingData,
-    audioPlayerParams = buildAudioPlayerParams(
+    audioPlayerParams = rememberAudioPlayerParams(
 	playIcon = {
 	    IconResource.fromImageVector(Icons.Default.PlayArrow)
 		.ComposeIcon()
