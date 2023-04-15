@@ -22,8 +22,9 @@ class AndroidAudioRecorder(
 
     private var recorder: MediaRecorder? = null
     private var audioRecordingDataFlowID: String? = null
-    private var _audioRecordingData =
+    private val _audioRecordingData =
         MutableStateFlow<AudioRecordingData>(AudioRecordingData.NotStarted)
+    private val audioRecordingData = _audioRecordingData.asStateFlow()
 
     private fun createRecorder(): MediaRecorder {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -48,7 +49,7 @@ class AndroidAudioRecorder(
 
         UUID.randomUUID().toString().also {uuid->
             audioRecordingDataFlowID = uuid
-            _audioRecordingData.value = AudioRecordingData.Recording(0, 0)
+            _audioRecordingData.value = AudioRecordingData.Recording(0,0)
             CoroutineScope(dispatcher).launch {
                 startFlowingAudioRecordingData(uuid)
                     .collectLatest {
@@ -57,7 +58,7 @@ class AndroidAudioRecorder(
             }
         }
 
-        return _audioRecordingData.asStateFlow()
+        return audioRecordingData
 
     }
 
@@ -76,8 +77,7 @@ class AndroidAudioRecorder(
             recorder?.pause()
             _audioRecordingData.value = AudioRecordingData.Paused(
                 currentData.elapsedTime,
-                recorder?.maxAmplitude ?: 0
-            )
+                recorder?.maxAmplitude ?: 0)
         }
     }
 
@@ -87,8 +87,7 @@ class AndroidAudioRecorder(
             recorder?.resume()
             _audioRecordingData.value = AudioRecordingData.Recording(
                 currentData.elapsedTime,
-                recorder?.maxAmplitude ?: 0
-            )
+                recorder?.maxAmplitude ?: 0)
         }
     }
 
@@ -108,7 +107,7 @@ class AndroidAudioRecorder(
                 if(currentData is AudioRecordingData.Recording) {
                     emit(
                         AudioRecordingData.Recording(
-                            currentData.elapsedTime + UPDATE_DATA_INTERVAL_MILLIS,
+                            currentData.elapsedTime+UPDATE_DATA_INTERVAL_MILLIS,
                             recorder?.maxAmplitude ?: 0
                         )
                     )

@@ -19,6 +19,7 @@ class AndroidAudioPlayer(
     private var player: MediaPlayer? = null
     private val _audioPlayingData =
         MutableStateFlow(AudioPlayingData(AudioPlayerStatus.NOT_INITIALIZED, 0, 0))
+    private val audioPlayingData = _audioPlayingData.asStateFlow()
     private var flowJob: Job? = null
     private var currentUniqueId: String? = null
 
@@ -43,7 +44,7 @@ class AndroidAudioPlayer(
                     }
             }
         }
-        return _audioPlayingData.asStateFlow()
+        return audioPlayingData
     }
 
     override fun pause() {
@@ -79,7 +80,7 @@ class AndroidAudioPlayer(
 
     override fun seek(position: Long) {
         player?.let {
-            if(_audioPlayingData.value.status!= AudioPlayerStatus.NOT_INITIALIZED){
+            if(_audioPlayingData.value.status!=AudioPlayerStatus.NOT_INITIALIZED){
                 it.seekTo(position.toInt())
             }
         }
